@@ -1,0 +1,139 @@
+<link rel="import" href="bower_components/polymer/polymer-element.html">
+<link rel="import" href="bower_components/vaadin-upload/vaadin-upload.html">
+<dom-module id="custom-upload">
+  <template>
+    <style>
+      :host {
+          display: block
+      }
+    </style>
+    <div style="display: none">{{valid}}</div>
+    <vaadin-upload id="upload" files={{files}}></vaadin-upload>
+  </template>
+
+  <script>
+    /**
+     * `custom-upload`
+     * is a wrapper for &lt;vaadin-upload&gt; web component to allow marking an uploaded file as invalid if requirements on the uploaded file are not fulfilled.
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+     class CustomUpload extends Polymer.Element {
+        /**
+         * String providing the tag name to register the element under.
+         */
+        static get is() {
+            return 'custom-upload';
+        }
+
+        /**
+         * Object describing property-related metadata used by Polymer features
+         */
+        static get properties() {
+            return {
+                /**
+                 * Stores state if all listed files are correctly uploaded and are valid.
+                 */
+                valid: {type: Boolean, notify: true},
+                files: {type:Array}
+            };
+        }
+
+        /**
+         * Instance of the element is created/upgraded. Use: initializing state,
+         * set up event listeners, create shadow dom.
+         * @constructor
+         */
+        constructor() {
+            super();
+        }
+
+        /**
+         * Use for one-time configuration of your component after local DOM is initialized. 
+         */
+        ready() {
+            super.ready();
+
+          this.$.upload.addEventListener('upload-error', this._onUploadAction.bind(this));
+          this.$.upload.addEventListener('upload-success', this._onUploadAction.bind(this));
+          this.$.upload.addEventListener('file-reject', this._onUploadAction.bind(this));
+          this.$.upload.addEventListener('upload-retry', this._onUploadAction.bind(this));
+          this.$.upload.addEventListener('upload-abort', this._onUploadAction.bind(this));
+        }
+        
+       static get observers() {
+			  return [
+			    '_filesChanged(files, files.splices)'
+			  ];
+			} 
+			
+			 _filesChanged(splices){
+				this._validate();
+      } 
+      
+        _onUploadAction(event){
+          this._validate();
+        }
+        
+        /**
+         * Informs component that server validation for the uploaded file failed.
+         * 
+         *  @param {String} filename Filename of uploaded file failing validation
+         *  @param {String} error Error to display on the file explaining reason of validation fail.
+         */
+        validationFailed(filename, error){
+          var upload = this.$.upload;
+          upload.files.filter(f => f.name === filename).forEach(f => {
+            f.error =error;
+            upload._notifyFileChanges(f);
+          }
+          );
+          this._validate();
+        }
+        
+        _validate(){
+          this.valid = !this.$.upload.files.find(f => f.error);
+        }
+
+        
+
+        // Use MockHttpRequest in demos
+        mockXhrGenerator(file) {
+          var xhr = new MockHttpRequest();
+          xhr.upload = {};
+          xhr.onsend = function() {
+            if (xhr.upload.onloadstart) {
+              xhr.upload.onloadstart();
+            }
+            var total = file && file.size || 1024, done = 0;
+            function start() {
+              setTimeout(progress, 1000);
+            }
+            function progress() {
+              xhr.upload.onprogress({total: total, loaded: done});
+              if (done < total) {
+                setTimeout(progress, 200);
+                done = Math.min(total, done + 254000);
+              } else if (!file.abort) {
+                setTimeout(finish, 1000);
+              }
+            }
+            function finish() {
+              xhr.receive(200, '{"message":"OK"}');
+            }
+            start();
+          };
+          return xhr;
+        }
+
+        doUseMockXhrGenerator(){
+          Object.getPrototypeOf(this.$.upload)._createXhr = this.mockXhrGenerator;
+        }
+
+      }
+
+    window.customElements.define(CustomUpload.is, CustomUpload);
+  </script>
+</dom-module>
