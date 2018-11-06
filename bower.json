@@ -2,6 +2,7 @@
   "name": "custom-upload",
   "description": "`custom-upload` is a wrapper for &lt;vaadin-upload&gt; web component to allow marking an uploaded file as invalid if requirements on the uploaded file are not fulfilled.",
   "main": "custom-upload.html",
+  "version": "0.2",
   "dependencies": {
     "polymer": "Polymer/polymer#^2.0.0",
     "vaadin-upload": "vaadin/vaadin-upload#^4.2.1"
